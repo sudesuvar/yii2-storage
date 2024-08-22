@@ -27,4 +27,5 @@ return [
     'Update' => 'Güncelle',
     'Save' => 'Kaydet',
     'Search for file...' => 'Dosya ara...',
+    'Are you sure you want to delete all items ?' => 'Tüm öğeleri silmek istediğinizden emin misiniz ?'
 ];

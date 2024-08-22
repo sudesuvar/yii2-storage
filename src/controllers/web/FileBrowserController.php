@@ -66,7 +66,7 @@ class FileBrowserController extends Controller
     public function actionIndex()
     {
 
-        if (!\Yii::$app->user->can('storageWebDefaultIndex', ['id_module' => 'storage']) && !\Yii::$app->user->can('storageWebDefaultIndexForWorkspace', ['id_module' => 'storage'] )) {
+        if (!\Yii::$app->user->can('storageWebDefaultIndex', ['id_module' => 'storage']) && !\Yii::$app->user->can('storageWebDefaultIndexForWorkspace', ['id_module' => 'storage'])) {
             throw new \yii\web\ForbiddenHttpException(Module::t('You are not allowed to access this page.'));
         }
 
@@ -128,11 +128,11 @@ class FileBrowserController extends Controller
                 }
             } else if ((!isset(Yii::$app->request->queryParams['StorageSearch']['access']) || !isset(Yii::$app->request->queryParams['StorageSearch']['title']))) {
                 if (\Yii::$app->user->can('storageWebDefaultIndexForWorkspace', ['id_module' => 'storage'])) {
-                $query->andWhere([
-                    'OR',
-                    ['and', ['id_workspace' => Yii::$app->workspace->id, 'access' => Storage::ACCESS_PRIVATE]],
-                    ['access' => Storage::ACCESS_PUBLIC, 'id_workspace' => Yii::$app->workspace->id]
-                ]);
+                    $query->andWhere([
+                        'OR',
+                        ['and', ['id_workspace' => Yii::$app->workspace->id, 'access' => Storage::ACCESS_PRIVATE]],
+                        ['access' => Storage::ACCESS_PUBLIC, 'id_workspace' => Yii::$app->workspace->id]
+                    ]);
                 } else {
                     $query->andWhere(['access' => Storage::ACCESS_PUBLIC])->andWhere(['id_workspace' => Yii::$app->workspace->id]);
                 }
@@ -379,6 +379,50 @@ class FileBrowserController extends Controller
             return ['success' => true];
         }
     }
+
+    // workspace e göre silme
+    public function actionDeleteAll()
+    {
+        if ($this->request->isAjax)
+        Yii::$app->response->format = \yii\web\Response::FORMAT_JSON;
+    $id = Yii::$app->request->isPost ? $this->findModel(Yii::$app->request->post('id')) : $this->findModel(Yii::$app->request->get('id'));
+
+    if (!Yii::$app->user->can('storageWebDefaultDelete', ['model' => $this->findModel($id), 'id_module' => 'storage'])) {
+        throw new \yii\web\ForbiddenHttpException(Module::t('You are not allowed to access this page.'));
+    }
+
+    $model = $this->findModel($id);
+    /* if (!$model->deleteFile($model->name)) {
+        \Yii::$app->session->addFlash('error', Module::t('Error deleting file'));
+    } else if (!$model->delete()) {
+        \Yii::$app->session->addFlash('error', Module::t('Error deleting file'));
+    } */
+    $transaction = Yii::$app->db->beginTransaction();
+    try {
+        if ($model->delete()) {
+            if (!$model->deleteFile($model->name)) {
+                $transaction->rollBack();
+                throw new \Exception(Module::t('Error deleting file'));
+            }
+        }
+        $transaction->commit();
+        \Yii::$app->session->addFlash('success', Module::t('File deleted successfully'));
+    } catch (\Exception $e) {
+        $transaction->rollBack();
+        \Yii::$app->session->addFlash('error', $e->getMessage());
+    }
+
+    if ($this->request->isAjax) {
+        Yii::$app->response->format = \yii\web\Response::FORMAT_JSON;
+        return ['success' => true];
+    }
+    }
+
+
+
+
+
+
 
     /**
      * Finds the Storage model based on its primary key value.

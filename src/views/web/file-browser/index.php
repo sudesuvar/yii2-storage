@@ -11,6 +11,7 @@ use portalium\theme\widgets\Modal;
 use portalium\storage\models\Storage;
 use portalium\theme\bundles\IconAsset;
 use portalium\theme\widgets\Panel;
+use portalium\workspace\models\WorkspaceUser;
 
 $this->registerCss(
     <<<CSS
@@ -131,7 +132,7 @@ if ($isPicker) {
         ],
     ]);
     echo '<div class="d-flex justify-content-between modal-header" style="width: 100%; padding-top: 0px;">';
-    echo $this->render('_search', ['model' => $searchModel, 'name' => $name, 'isPicker' => $isPicker, 'manage'=>$manage]);
+    echo $this->render('_search', ['model' => $searchModel, 'name' => $name, 'isPicker' => $isPicker, 'manage' => $manage]);
     echo Html::button(Module::t(''), ['class' => 'fa fa-upload btn btn-success', 'style' => 'float:right;', 'id' => 'file-picker-add-button' . $name]) . Html::tag('button', '
     <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
     ', ['id' => 'file-picker-add-spinner' . $name, 'class' => 'btn btn-success', 'role' => 'status', 'aria-hidden' => 'true', 'style' => 'display:none; float:right; margin-bottom: -2px; font-size: small;']);
@@ -145,11 +146,19 @@ if ($isPicker) {
         'id' => 'file-picker-panel' . $name,
         'actions' => [
             'header' => [
-                $this->render('_search', ['model' => $searchModel, 'name' => $name, 'isPicker' => $isPicker, 'manage'=>$manage]),
+                $this->render('_search', ['model' => $searchModel, 'name' => $name, 'isPicker' => $isPicker, 'manage' => $manage]),
                 Html::button(
                     '',
-                    ['class' => 'fa fa-upload btn btn-success', 'style' => 'float:right;', 'id' => 'file-picker-add-button' . $name]
+                    ['class' => 'fa fa-trash btn btn-danger', 'style' => 'float:right;  margin-right: 5px; width: 35px; ', 'id' => WorkspaceUser::getActiveWorkspaceId() , 'data' => [
+                        'confirm' => Module::t( 'Are you sure you want to delete this item?'),
+                        'method' => 'post']
+                    ]
                 ) .
+                    Html::button(
+                        '',
+                        ['class' => 'fa fa-upload btn btn-success', 'style' => 'float:right; width: 35px;', 'id' => 'file-picker-add-button' . $name]
+                    ) .
+
                     Html::tag('button', '
                 <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
                 ', ['id' => 'file-picker-add-spinner' . $name, 'class' => 'btn btn-success', 'role' => 'status', 'aria-hidden' => 'true', 'style' => 'display:none;']),
@@ -261,6 +270,42 @@ echo $this->render('./_formModal', [
 ]);
 Pjax::end();
 Modal::end();
+
+
+/*$modals = Modal::begin([
+    'id' => 'file-allDelete-modal' . $name,
+    'size' => Modal::SIZE_DEFAULT,
+    'footer' =>
+    Html::button(Module::t('Close'), ['class' => 'btn btn-primary', 'data-bs-dismiss' => 'modal']) .
+        Html::button(Module::t('Delete'), ['class' => 'btn btn-danger',  'id' => 'deleteAll']) .
+        Html::tag('button', '
+                <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                ', ['id' => 'delete-storage-spinner' . $name, 'class' => 'btn btn-primary', 'role' => 'status', 'aria-hidden' => 'true', 'style' => 'display:none;']),
+    'closeButton' => false,
+]);
+Pjax::begin(['id' => 'file-Delete-pjax' . $name, 'history' => false, 'timeout' => false]);
+$id_storage = ($storageModel != null && $storageModel->id_storage != '') ? $storageModel->id_storage : "null";
+$this->registerJs('id_storage' . $variablePrefix . ' = ' . $id_storage . ';', View::POS_END);
+$this->registerJs('
+    if (id_storage' . $variablePrefix . ' != null) {
+        document.getElementById("file-picker-input-" + "' . $name . '").value = JSON.stringify({id_storage: id_storage' . $variablePrefix . '});
+    }
+', View::POS_END);
+echo $this->render('./_formDeleteModal', [
+    'model' => ($storageModel != null) ? $storageModel : new Storage(),
+    'widgetName' => $name,
+    'isPicker' => $isPicker,
+    'isJson' => $isJson,
+    'multiple' => isset($multiple) ? $multiple : 0,
+    'callbackName' => isset($callbackName) ? $callbackName : null,
+    'fileExtensions' => isset($fileExtensions) ? $fileExtensions : [],
+]);
+Pjax::end();
+Modal::end();*/
+
+
+
+
 
 if ($isPicker) {
     Modal::begin([
@@ -448,6 +493,16 @@ $this->registerJs(
     JS,
     View::POS_END
 );
+$this->registerJs(
+    <<<JS
+    document.getElementById("file-picker-allDelete-button" + '$name').addEventListener("click", function(){
+       
+        $('#file-allDelete-modal' + '$name').modal('show');      
+
+    });        
+    JS,
+    View::POS_END
+);
 
 
 if ($isPicker) {
@@ -568,3 +623,47 @@ $this->registerJs(
         });
         JS,
 );
+
+$this->registerJs(
+    <<<JS
+    $(document).ready(function () {
+        $('#deleteAll').click(function () {
+            /*var workspaceId = id_storage$variablePrefix; 
+            var myFormData = new FormData();
+            myFormData.append('workspace_id', workspaceId);
+            myFormData.append('$csrfParam', '$csrfToken');*/
+
+            if (confirm('Are you sure you want to delete all data for this workspace? This action cannot be undone.')) {
+                $('#delete-storage-spinner' + '$name').show(); 
+                $('#deleteAll').hide(); 
+                $.ajax({
+                    url: '/storage/file-browser/delete-all',
+                    type: 'post',
+                    data: {
+                        '_csrf-web': yii.getCsrfToken(),
+                        'id': parsedData.id_workspace ? parsedData.id_workspace : parsedData, 
+                        'payload': JSON.stringify(payload$variablePrefix),
+                        },
+                    success: function (data) {
+                        if (data.success) {
+                            alert(data.message);
+                            $.pjax.reload({container: '#file-Delete-pjax' + '$name'}); 
+                            $('#file-allDelete-modal' + '$name').modal('hide'); 
+                        } else {
+                            alert('Failed to delete data: ' + data.message);
+                        }
+                    },
+                    error: function () {
+                        alert('An error occurred while trying to delete data.');
+                    },
+                    complete: function () {
+                        $('#delete-storage-spinner' + '$name').hide(); 
+                        $('#deleteAll').show(); 
+                    }
+                });
+            }
+        });
+    });
+    JS,
+);
+

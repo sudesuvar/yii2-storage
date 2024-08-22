@@ -259,7 +259,7 @@ if ($view == 1) {
                         type: 'post',
                         data: {
                             '_csrf-web': yii.getCsrfToken(),
-                            'id': parsedData.id_storage ? parsedData.id_storage : parsedData,
+                            'id': parsedData.id_storage ? parsedData.id_storage : parsedData, 
                             'payload': JSON.stringify(payload$variablePrefix),
                         },
                         success: function (data) {

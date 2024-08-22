@@ -12,29 +12,13 @@ use portalium\storage\Module;
 ?>
 
 <div class="storage-form">
-    
 
-    <div class="mb-3 row">
-        <label class="col-sm-2 col-form-label" for="storage-title<?= $widgetName ?>"><?= Module::t('Title') ?></label>
-        <div class="col-sm-10">
-            <?= Html::textInput('title', $model->title, ['class' => 'form-control', 'id' => 'storage-title' . $widgetName]) ?>
-        </div>
+
+    <div class="">
+        <label class="col-form-label" for="storage-title<?= $widgetName ?>" style=""><?= Module::t('Are you sure you want to delete all items ?') ?></label>
     </div>
-    <div class="mb-3 row">
-        <label class="col-sm-2 col-form-label" for="storage-access<?= $widgetName ?>"><?= Module::t('Access') ?></label>
-        <div class="col-sm-10">
-            <?= Html::dropDownList('access', $model->access ? $model->access : Storage::ACCESS_PRIVATE, \portalium\storage\models\Storage::getAccesses(), ['class' => 'form-control', 'id' => 'storage-access' . $widgetName]) ?>
-        </div>
-    </div>
-    <div class="mb-3 row">
-        <label class="col-sm-2 col-form-label" for="storage-file<?= $widgetName ?>"><?= Module::t('File') ?></label>
-        <div class="col-sm-10">
-            
-            <?php
-            echo Html::fileInput('file', null, ['id' => 'storage-file' . $widgetName, 'class' => 'form-control'])
-            ?>
-        </div>
-    </div>
+
+
     <?php
         Modal::begin([
             'id' => 'storage-error-modal' . $widgetName,
